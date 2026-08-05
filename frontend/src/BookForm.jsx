@@ -1,52 +1,85 @@
 import { useState } from 'react';
+// 1. IMPORT our centralized Network Robot
+import api from './api/axiosConfig';
 
-function BookForm({ token, onBookAdded }) {
-    // 1. State for each input field
+function BookForm({ onBookAdded }) {
     const [title, setTitle] = useState('');
     const [author, setAuthor] = useState('');
     const [price, setPrice] = useState(0.0);
 
-    // 2. The Submit Handler
     const handleSubmit = (e) => {
-        e.preventDefault(); // Stop the page from refreshing
+        e.preventDefault();
 
+        // Prepare data to match the Java BookEntity wrappers (Double/Integer)
         const newBook = {
             title,
             author,
             price: parseFloat(price),
-            copies: 10 // Defaulting inventory for now
+            copies: 10
         };
 
-        // 3. POST to Spring Boot with the RSA Token
-        fetch('/api/rest/books', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // THE CRITICAL S26 LINE
-            },
-            body: JSON.stringify(newBook),
-        })
+        // 2. USE the api instance.
+        // Notice: No manual headers or 'token' props needed!
+        // The Axios Interceptor automatically attaches the RSA Passport.
+        api.post('/rest/books', newBook)
             .then(response => {
-                if(!response.ok) throw new Error("Could not save book. Check roles.");
-                return response.json();
-            })
-            .then(savedBook => {
-                alert("Book Saved to Database!");
-                onBookAdded(savedBook); // Call the parent to update the list
-                // 4. Clear the form UI
+                alert("Book Saved to RSA-Secured Database!");
+                onBookAdded(response.data); // Axios returns data in the .data property
+
+                // Clear the UI fields
                 setTitle(''); setAuthor(''); setPrice(0.0);
             })
-            .catch(err => alert(err.message));
+            .catch(err => {
+                console.error("Save Error:", err);
+                alert("Unauthorized: You do not have permission to add books.");
+            });
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ border: '2px solid blue', padding: '20px', marginBottom: '20px' }}>
-            <h3>Add New Book (Secured)</h3>
-            <input type="text" placeholder="Title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-            <input type="text" placeholder="Author" value={author} onChange={(e) => setAuthor(e.target.value)} required />
-            <input type="number" step="0.01" placeholder="Price" value={price} onChange={(e) => setPrice(e.target.value)} required />
-            <button type="submit">Save to RSA Backend</button>
-        </form>
+        <div style={{ border: '2px solid blue', padding: '20px', marginBottom: '20px', borderRadius: '8px' }}>
+            <h3>Add New Book (Secured via Axios)</h3>
+
+            <form onSubmit={handleSubmit}>
+                {/* Flexbox Column Headers */}
+                <div style={{ display: 'flex', gap: '10px', fontWeight: 'bold', marginBottom: '5px' }}>
+                    <div style={{ flex: 2 }}>Title</div>
+                    <div style={{ flex: 1 }}>Author</div>
+                    <div style={{ width: '100px' }}>Price</div>
+                    <div style={{ width: '150px' }}>Action</div>
+                </div>
+
+                {/* Input Row */}
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <input
+                        type="text"
+                        placeholder="Title"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        required
+                        style={{ flex: 2, padding: '8px' }}
+                    />
+                    <input
+                        type="text"
+                        placeholder="Author"
+                        value={author}
+                        onChange={(e) => setAuthor(e.target.value)}
+                        required
+                        style={{ flex: 1, padding: '8px' }}
+                    />
+                    <input
+                        type="number"
+                        step="0.01"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                        required
+                        style={{ width: '100px', padding: '8px' }}
+                    />
+                    <button type="submit" style={{ width: '150px', padding: '8px', cursor: 'pointer', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
+                        Save to Backend
+                    </button>
+                </div>
+            </form>
+        </div>
     );
 }
 
