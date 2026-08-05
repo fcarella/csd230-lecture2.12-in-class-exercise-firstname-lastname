@@ -77,9 +77,20 @@ public class WebSecurityConfig {
         return jwtAuthenticationConverter;
     }
 
+    //    @Bean
+//    JwtDecoder jwtDecoder() {
+//        return NimbusJwtDecoder.withPublicKey(rsaKeys.publicKey()).build();
+//    }
     @Bean
     JwtDecoder jwtDecoder() {
-        return NimbusJwtDecoder.withPublicKey(rsaKeys.publicKey()).build();
+        NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withPublicKey(rsaKeys.publicKey()).build();
+
+        // Disable the default 60-second clock skew tolerance
+        org.springframework.security.oauth2.core.OAuth2TokenValidator<org.springframework.security.oauth2.jwt.Jwt> strictValidator =
+                new org.springframework.security.oauth2.jwt.JwtTimestampValidator(java.time.Duration.ZERO);
+
+        jwtDecoder.setJwtValidator(strictValidator);
+        return jwtDecoder;
     }
 
     @Bean

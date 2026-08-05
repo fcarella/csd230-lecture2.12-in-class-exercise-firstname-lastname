@@ -27,7 +27,9 @@ public class TokenService {
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .issuer("self")
                 .issuedAt(now)
-                .expiresAt(now.plus(1, ChronoUnit.HOURS))
+//                .expiresAt(now.plus(1, ChronoUnit.HOURS))
+                // Change this line temporarily for testing:
+                .expiresAt(now.plus(10, ChronoUnit.SECONDS))
                 .subject(authentication.getName())
                 .claim("scope", scope) // Standard OAuth2 claim name
                 .build();

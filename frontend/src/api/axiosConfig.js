@@ -1,15 +1,12 @@
 import axios from 'axios';
 
-
 const api = axios.create({
-    baseURL: '/api' // Works with our Vite Proxy to Port 8080
+    baseURL: '/api'
 });
 
-
-// REQUEST INTERCEPTOR: The "Global Passport Machine"
+// REQUEST: Attach Token
 api.interceptors.request.use(
     (config) => {
-        // Snatch the token from storage right before the request fires
         const token = localStorage.getItem('token');
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
@@ -19,19 +16,23 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-
-// RESPONSE INTERCEPTOR: The "Graceful Failure" Observer
+// RESPONSE: Catch Expiration
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        // If RSA Token expires (401) or permissions are wrong (403)
+        const originalRequest = error.config;
+
         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-            localStorage.removeItem('token');
-            window.location.href = '/?expired=true'; // Kick to login
+            // Only redirect if this wasn't a login attempt
+            if (!originalRequest.url.includes('/auth/token')) {
+                console.warn("Session invalid. Wiping storage...");
+                localStorage.removeItem('token');
+                // Force a hard redirect to root to reset React memory
+                window.location.href = '/?expired=true';
+            }
         }
         return Promise.reject(error);
     }
 );
-
 
 export default api;
